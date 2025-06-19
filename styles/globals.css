@@ -1,0 +1,24 @@
+body {
+  font-family: sans-serif;
+  margin: 20px;
+  padding: 0;
+}
+
+textarea {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+
+.diff span.added {
+  background-color: #d4f4dd;
+}
+
+.diff span.removed {
+  background-color: #f8d7da;
+}
+
+.diff span.whitespace {
+  background-color: #dbeafe;
+}
