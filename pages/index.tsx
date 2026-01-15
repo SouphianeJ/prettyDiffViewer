@@ -7,8 +7,6 @@ import { downloadAsDocx } from '../utils/downloadDocx'
 export default function Home() {
   const [oldText, setOldText] = useState('')
   const [newText, setNewText] = useState('')
-  const [apiKey, setApiKey] = useState('')
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false)
 
   const handleDownloadDocx = () => {
     if (newText.trim()) {
@@ -23,25 +21,6 @@ export default function Home() {
   return (
     <div className="container">
       <h1>Pretty Diff Viewer</h1>
-      
-      {/* API Key Configuration */}
-      <div className="api-key-section">
-        <button 
-          className="toggle-api-key-btn"
-          onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-        >
-          {showApiKeyInput ? 'Masquer' : 'Configurer'} Clé API Gemini
-        </button>
-        {showApiKeyInput && (
-          <input
-            type="password"
-            className="api-key-input"
-            placeholder="Entrez votre clé API Gemini"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-        )}
-      </div>
 
       <div className="inputs-container">
         {/* Input 1 Section */}
@@ -89,7 +68,6 @@ export default function Home() {
         <AIPrompter 
           inputText={oldText}
           onResponse={handleAIResponse}
-          apiKey={apiKey}
         />
       </div>
 

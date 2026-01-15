@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 
 interface AIPrompterProps {
   inputText: string
   onResponse: (response: string) => void
-  apiKey: string
 }
 
-export default function AIPrompter({ inputText, onResponse, apiKey }: AIPrompterProps) {
+export default function AIPrompter({ inputText, onResponse }: AIPrompterProps) {
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -23,39 +21,28 @@ export default function AIPrompter({ inputText, onResponse, apiKey }: AIPrompter
       return
     }
 
-    if (!apiKey.trim()) {
-      setError('Veuillez configurer votre clé API Gemini')
-      return
-    }
-
     setLoading(true)
     setError(null)
 
     try {
-      const genAI = new GoogleGenerativeAI(apiKey)
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt, inputText }),
+      })
 
-      const systemPrompt = `Voici des instructions, tu es un agent qui relit et améliore des textes en suivant les instructions sans prendre de liberté.
+      const data = await response.json()
 
-INSTRUCTIONS À SUIVRE EXACTEMENT:
-${prompt}
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de la requête')
+      }
 
-TEXTE À MODIFIER:
-${inputText}
-
-RÈGLES STRICTES:
-- INTERDIT: Pas de phrases d'introduction ou de conclusion
-- Renvoie UNIQUEMENT le texte modifié
-- Suis les instructions exactement sans prendre de liberté`
-
-      const result = await model.generateContent(systemPrompt)
-      const response = await result.response
-      const text = response.text()
-
-      onResponse(text)
+      onResponse(data.result)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue'
-      setError(`Erreur API: ${errorMessage}`)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }

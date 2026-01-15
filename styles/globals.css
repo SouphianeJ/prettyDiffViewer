@@ -27,39 +27,6 @@ h2 {
   color: #333;
 }
 
-/* API Key Section */
-.api-key-section {
-  margin-bottom: 24px;
-  padding: 16px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.toggle-api-key-btn {
-  padding: 8px 16px;
-  background-color: #6366f1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.toggle-api-key-btn:hover {
-  background-color: #4f46e5;
-}
-
-.api-key-input {
-  width: 100%;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
 /* Inputs Container */
 .inputs-container {
   display: grid;
