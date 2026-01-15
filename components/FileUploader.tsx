@@ -40,15 +40,21 @@ function htmlToMarkdown(html: string): string {
   // Handle links
   markdown = markdown.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
   
-  // Remove remaining HTML tags
-  markdown = markdown.replace(/<[^>]+>/g, '')
+  // Remove remaining HTML tags - use a loop to handle nested/malformed tags
+  let previousMarkdown
+  do {
+    previousMarkdown = markdown
+    markdown = markdown.replace(/<[^>]*>/g, '')
+  } while (markdown !== previousMarkdown)
   
-  // Decode HTML entities
+  // Decode HTML entities - decode &amp; first to prevent double-unescaping
+  // Then decode other entities in proper order
+  markdown = markdown.replace(/&amp;/g, '\u0000AMP\u0000')  // Temporary placeholder
   markdown = markdown.replace(/&nbsp;/g, ' ')
-  markdown = markdown.replace(/&amp;/g, '&')
   markdown = markdown.replace(/&lt;/g, '<')
   markdown = markdown.replace(/&gt;/g, '>')
   markdown = markdown.replace(/&quot;/g, '"')
+  markdown = markdown.replace(/\u0000AMP\u0000/g, '&')  // Restore ampersand last
   
   // Clean up extra whitespace
   markdown = markdown.replace(/\n{3,}/g, '\n\n')
