@@ -6,6 +6,57 @@ interface FileUploaderProps {
   label: string
 }
 
+// Simple HTML to Markdown converter
+function htmlToMarkdown(html: string): string {
+  let markdown = html
+  
+  // Handle headings
+  markdown = markdown.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+  markdown = markdown.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+  markdown = markdown.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+  markdown = markdown.replace(/<h4[^>]*>(.*?)<\/h4>/gi, '#### $1\n\n')
+  markdown = markdown.replace(/<h5[^>]*>(.*?)<\/h5>/gi, '##### $1\n\n')
+  markdown = markdown.replace(/<h6[^>]*>(.*?)<\/h6>/gi, '###### $1\n\n')
+  
+  // Handle bold and italic
+  markdown = markdown.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+  markdown = markdown.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+  markdown = markdown.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+  markdown = markdown.replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+  
+  // Handle paragraphs
+  markdown = markdown.replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+  
+  // Handle line breaks
+  markdown = markdown.replace(/<br\s*\/?>/gi, '\n')
+  
+  // Handle lists
+  markdown = markdown.replace(/<ul[^>]*>/gi, '')
+  markdown = markdown.replace(/<\/ul>/gi, '\n')
+  markdown = markdown.replace(/<ol[^>]*>/gi, '')
+  markdown = markdown.replace(/<\/ol>/gi, '\n')
+  markdown = markdown.replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+  
+  // Handle links
+  markdown = markdown.replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+  
+  // Remove remaining HTML tags
+  markdown = markdown.replace(/<[^>]+>/g, '')
+  
+  // Decode HTML entities
+  markdown = markdown.replace(/&nbsp;/g, ' ')
+  markdown = markdown.replace(/&amp;/g, '&')
+  markdown = markdown.replace(/&lt;/g, '<')
+  markdown = markdown.replace(/&gt;/g, '>')
+  markdown = markdown.replace(/&quot;/g, '"')
+  
+  // Clean up extra whitespace
+  markdown = markdown.replace(/\n{3,}/g, '\n\n')
+  markdown = markdown.trim()
+  
+  return markdown
+}
+
 export default function FileUploader({ onFileContent, label }: FileUploaderProps) {
   const [convertToMarkdown, setConvertToMarkdown] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -30,9 +81,10 @@ export default function FileUploader({ onFileContent, label }: FileUploaderProps
         const arrayBuffer = await file.arrayBuffer()
         
         if (convertToMarkdown) {
-          // Convert to simple markdown-like format
-          const result = await mammoth.extractRawText({ arrayBuffer })
-          onFileContent(result.value)
+          // Convert to HTML first, then to simple markdown
+          const result = await mammoth.convertToHtml({ arrayBuffer })
+          const markdown = htmlToMarkdown(result.value)
+          onFileContent(markdown)
         } else {
           // Extract raw text directly
           const result = await mammoth.extractRawText({ arrayBuffer })
