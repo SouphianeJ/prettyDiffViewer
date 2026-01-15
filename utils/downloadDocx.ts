@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun } from 'docx'
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, convertInchesToTwip } from 'docx'
 import { saveAs } from 'file-saver'
 
 // Parse inline markdown formatting and return TextRun array
@@ -44,37 +44,92 @@ function parseInlineMarkdown(text: string): TextRun[] {
   return runs
 }
 
+// Count leading tabs or spaces (4 spaces = 1 tab level)
+function getIndentationLevel(line: string): { level: number; content: string } {
+  let level = 0
+  let index = 0
+  
+  while (index < line.length) {
+    if (line[index] === '\t') {
+      level++
+      index++
+    } else if (
+      line[index] === ' ' &&
+      line[index + 1] === ' ' &&
+      line[index + 2] === ' ' &&
+      line[index + 3] === ' '
+    ) {
+      level++
+      index += 4
+    } else {
+      break
+    }
+  }
+  
+  return { level, content: line.slice(index) }
+}
+
+// Map heading level (1-6) to HeadingLevel enum
+const headingLevelMap: Record<number, typeof HeadingLevel[keyof typeof HeadingLevel]> = {
+  1: HeadingLevel.HEADING_1,
+  2: HeadingLevel.HEADING_2,
+  3: HeadingLevel.HEADING_3,
+  4: HeadingLevel.HEADING_4,
+  5: HeadingLevel.HEADING_5,
+  6: HeadingLevel.HEADING_6,
+}
+
+// Parse markdown heading and return level and text, or null if not a heading
+function parseMarkdownHeading(text: string): { level: number; content: string } | null {
+  const match = text.match(/^(#{1,6})\s+(.*)$/)
+  if (match) {
+    return { level: match[1].length, content: match[2] }
+  }
+  return null
+}
+
 export async function downloadAsDocx(content: string, filename: string = 'document.docx') {
   // Split content into paragraphs by line breaks
   const lines = content.split('\n')
   
-  const paragraphs = lines.map(line => {
-    // Handle markdown headings
-    if (line.startsWith('# ')) {
-      return new Paragraph({
-        children: [new TextRun({ text: line.substring(2), bold: true, size: 32 })],
-      })
-    } else if (line.startsWith('## ')) {
-      return new Paragraph({
-        children: [new TextRun({ text: line.substring(3), bold: true, size: 28 })],
-      })
-    } else if (line.startsWith('### ')) {
-      return new Paragraph({
-        children: [new TextRun({ text: line.substring(4), bold: true, size: 24 })],
-      })
-    } else if (line.startsWith('- ')) {
-      // Handle list items
-      return new Paragraph({
-        children: parseInlineMarkdown(line.substring(2)),
-        bullet: { level: 0 },
-      })
+  const paragraphs: Paragraph[] = []
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    
+    // Get indentation level
+    const { level: indentLevel, content: lineContent } = getIndentationLevel(line)
+    
+    // Calculate indentation in twips (1 inch = 1440 twips, 0.5 inch per level)
+    const indentation = indentLevel > 0 ? { left: convertInchesToTwip(0.5 * indentLevel) } : undefined
+    
+    // Handle markdown headings with proper Word heading styles
+    const heading = parseMarkdownHeading(lineContent)
+    if (heading) {
+      paragraphs.push(new Paragraph({
+        text: heading.content,
+        heading: headingLevelMap[heading.level],
+        indent: indentation,
+      }))
+    } else if (lineContent.startsWith('- ')) {
+      // Handle list items with proper indentation
+      paragraphs.push(new Paragraph({
+        children: parseInlineMarkdown(lineContent.substring(2)),
+        bullet: { level: indentLevel },
+      }))
+    } else if (lineContent === '') {
+      // Empty line - add an empty paragraph for spacing
+      paragraphs.push(new Paragraph({
+        children: [],
+      }))
     } else {
-      // Handle inline formatting for regular paragraphs
-      return new Paragraph({
-        children: parseInlineMarkdown(line),
-      })
+      // Handle inline formatting for regular paragraphs with indentation
+      paragraphs.push(new Paragraph({
+        children: parseInlineMarkdown(lineContent),
+        indent: indentation,
+      }))
     }
-  })
+  }
 
   const doc = new Document({
     sections: [
@@ -92,6 +147,18 @@ export async function downloadAsDocx(content: string, filename: string = 'docume
               level: 0,
               format: 'bullet',
               text: '•',
+              alignment: 'left' as const,
+            },
+            {
+              level: 1,
+              format: 'bullet',
+              text: '◦',
+              alignment: 'left' as const,
+            },
+            {
+              level: 2,
+              format: 'bullet',
+              text: '▪',
               alignment: 'left' as const,
             },
           ],
